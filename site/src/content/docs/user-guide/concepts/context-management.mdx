@@ -11,19 +11,17 @@ sourceLinks:
 addedDate: 2026-06-12
 ---
 
-import { Tabs, Tab } from '@astrojs/starlight/components'
-
 As conversations grow, your agent's context window fills with messages, tool results, and system prompts. Without management, this leads to token limit errors, degraded performance, and loss of relevant information.
 
 The SDK ships context management configurations that work out of the box. Pick a mode and the SDK wires up the pieces with tuned defaults. You can drop down to explicit strategy configuration when you need fine-grained control.
 
 :::note[Migration note]
-The `SummarizingConversationManager`, `ContextOffloader`, and `conversation_manager` param are being deprecated and will be removed in a future release. The `ContextManager` strategy API described on this page is the replacement. See [Migrating from the legacy API](#migrating-from-the-legacy-api) if you are currently using those classes.
+The `SummarizingConversationManager`, `ContextOffloader`, and `conversation_manager` are superseded by the `ContextManager` strategy API described on this page. They continue to work for now. See [Migrating from the legacy API](#migrating-from-the-legacy-api) if you want to move over.
 :::
 
 ## Automatic context management
 
-For most agents, pass <Syntax py='context_manager="auto"' ts='contextManager: "auto"' /> and the SDK wires up a tuned strategy pipeline with no further configuration:
+For most agents, pass <Syntax py='context_manager="auto"' ts='contextManager: "auto"' /> and the SDK wires up context management with no further configuration:
 
 <Tabs>
 <Tab label="Python">
@@ -44,7 +42,7 @@ agent = Agent(context_manager="auto")
 </Tab>
 </Tabs>
 
-The `"auto"` pipeline combines two strategies whose defaults scored highest across [ContextBench](https://arxiv.org/abs/2602.05892) evaluations:
+The `"auto"` configuration combines two strategies whose defaults scored highest across [ContextBench](https://arxiv.org/abs/2602.05892) evaluations. On real code investigation tasks, these defaults dropped costs 55% while accuracy improved from 68% to 98%. See the [benchmark writeup](https://strandsagents.com/blog/reduced-cost-better-isolation-more-resilience/) for details.
 
 - **Large tool result offloading**: tool results over 2,500 tokens are replaced with a 1,000-token preview. The full content is stored in the stash and the agent gets a `retrieve_context` tool to fetch it on demand.
 - **Proactive summarization**: when the context window reaches 85% utilization, older messages are summarized and replaced with a compact summary block.
@@ -77,7 +75,7 @@ agent = Agent(context_manager="agentic")
 </Tab>
 </Tabs>
 
-The model is better positioned than a fixed threshold to know which messages still matter — a coding agent can drop a stale file it already edited while pinning the failing test it is working toward. Agentic mode trades tokens for that judgment.
+The model is better positioned than a fixed threshold to know which messages still matter. A coding agent can drop a stale file it already edited while pinning the failing test it is working toward. A threshold cannot tell the difference; it compresses by age. Agentic mode trades tokens for that judgment.
 
 **Token-usage telemetry.** Before each model call, the SDK appends a status block to the latest message:
 
@@ -90,19 +88,19 @@ The model is better positioned than a fixed threshold to know which messages sti
 
 **Three tools the model can call:**
 
-- `summarize_context` — folds older messages into a model-written summary. The model chooses how many recent messages to keep verbatim and what to target.
-- `truncate_context` — drops older messages outright. The model chooses how much history to keep.
-- `pin_context` — marks messages that must survive any compression. Pinned messages are never evicted.
+- `summarize_context` folds older messages into a model-written summary. The model chooses how many recent messages to keep verbatim and what to target.
+- `truncate_context` drops older messages outright. The model chooses how much history to keep.
+- `pin_context` marks messages that must survive any compression. Pinned messages are never evicted.
 
-Use `"auto"` for most agents — it manages context in the background with no model involvement. Reach for `"agentic"` when you want the model to judge relevance per message rather than compress on a fixed threshold.
+Use `"auto"` for most agents. It manages context in the background with no model involvement. Reach for `"agentic"` when you want the model to judge relevance per message rather than compress on a fixed threshold.
 
 ## Explicit strategy configuration
 
 :::caution[Experimental]
-The `ContextManager` strategy API is currently exported from `strands.experimental.context_manager` (Python) and is `@experimental` in TypeScript. It will move to the top-level namespace in a future release. The preset strings (`"auto"`, `"agentic"`) are stable.
+The `ContextManager` strategy API is experimental and may change in future versions.
 :::
 
-When you need fine-grained control, pass a `ContextManager` instance directly. Strategies are applied as an ordered pipeline — each one sees the output of the previous.
+When you need fine-grained control, pass a `ContextManager` instance directly. Strategies are applied in order where each one sees the output of the previous.
 
 <Tabs>
 <Tab label="Python">
@@ -164,12 +162,15 @@ The first argument to `Offload.*` controls what content the strategy considers:
 | Condition | Meaning |
 |---|---|
 | `threshold=N` | Fire when an individual block exceeds N tokens |
-| `utilization=0.85` | Fire when the context window is ≥ 85% full |
+| `utilization=0.85` | Fire when the context window is at least 85% full |
 | `preserve_recent=N` | Leave the N most recent matching messages untouched |
 
 ### Named presets (TypeScript)
 
-TypeScript supports preset name strings in the strategies array. These are tuning defaults and may change between releases — treat the name as the stable contract:
+<Tabs>
+<Tab label="TypeScript">
+
+TypeScript supports preset name strings in the strategies array. Preset definitions may be tuned between releases:
 
 | Preset | What it does |
 |---|---|
@@ -183,6 +184,9 @@ TypeScript supports preset name strings in the strategies array. These are tunin
 
 --8<-- "user-guide/concepts/context-management.ts:presets"
 ```
+
+</Tab>
+</Tabs>
 
 ### Custom summarization model
 
@@ -226,7 +230,7 @@ from strands.storage import LocalFileStorage, S3Storage
 # Local filesystem
 stash = {"storage": LocalFileStorage("./artifacts/"), "retrieval_tool": True}
 
-# S3 — uses ambient AWS credentials
+# S3, uses ambient AWS credentials
 stash = {"storage": S3Storage("my-bucket", prefix="agent-stash/"), "retrieval_tool": True}
 ```
 </Tab>
@@ -240,13 +244,11 @@ See [Storage](./storage) for the full storage backend reference.
 
 ## Migrating from the legacy API
 
-If you are currently using `SummarizingConversationManager`, `ContextOffloader`, or the `conversation_manager` param, these are being deprecated. The equivalents in the new API:
+If you are currently using `SummarizingConversationManager`, `ContextOffloader`, or the `conversation_manager` param, the table below shows the equivalents in the new API:
 
 | Legacy | New |
 |---|---|
 | `SummarizingConversationManager(summary_ratio=0.3)` | `Offload.summarize("*").when(utilization=0.85, preserve_recent=2)` |
 | `ContextOffloader(max_result_tokens=2500, preview_tokens=500)` | `Offload.truncate("tool_results", {"preview_tokens": 500}).when(threshold=2500)` |
 | `conversation_manager=SlidingWindowConversationManager(window_size=30)` | `Offload.truncate("*").when(utilization=1.0, preserve_recent=30)` |
-| `context_manager="auto"` | unchanged — `"auto"` is stable |
-
-The `context_manager="auto"` and `context_manager="agentic"` preset strings are fully stable and unaffected by the deprecation.
+| `context_manager="auto"` | unchanged |
