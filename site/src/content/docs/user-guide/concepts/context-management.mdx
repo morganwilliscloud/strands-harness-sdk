@@ -125,7 +125,6 @@ agent = Agent(
         # Omit for in-memory, or pass LocalFileStorage/S3Storage for durability.
         stash={
             "storage": LocalFileStorage("./artifacts/"),
-            "retrieval_tool": True,
         },
     ),
 )
@@ -215,6 +214,14 @@ agent = Agent(
 )
 ```
 </Tab>
+<Tab label="TypeScript">
+
+```typescript
+--8<-- "user-guide/concepts/context-management_imports.ts:custom_summarization_model_imports"
+
+--8<-- "user-guide/concepts/context-management.ts:custom_summarization_model"
+```
+</Tab>
 </Tabs>
 
 ## Storage backends
@@ -228,10 +235,18 @@ Both `"auto"` mode and the explicit `ContextManager` use in-memory storage by de
 from strands.storage import LocalFileStorage, S3Storage
 
 # Local filesystem
-stash = {"storage": LocalFileStorage("./artifacts/"), "retrieval_tool": True}
+stash = {"storage": LocalFileStorage("./artifacts/")}
 
 # S3, uses ambient AWS credentials
-stash = {"storage": S3Storage("my-bucket", prefix="agent-stash/"), "retrieval_tool": True}
+stash = {"storage": S3Storage("my-bucket", prefix="agent-stash/")}
+```
+</Tab>
+<Tab label="TypeScript">
+
+```typescript
+--8<-- "user-guide/concepts/context-management_imports.ts:storage_backends_imports"
+
+--8<-- "user-guide/concepts/context-management.ts:storage_backends"
 ```
 </Tab>
 </Tabs>
@@ -250,5 +265,5 @@ If you are currently using `SummarizingConversationManager`, `ContextOffloader`,
 |---|---|
 | `SummarizingConversationManager(summary_ratio=0.3)` | `Offload.summarize("*").when(utilization=0.85, preserve_recent=2)` |
 | `ContextOffloader(max_result_tokens=2500, preview_tokens=500)` | `Offload.truncate("tool_results", {"preview_tokens": 500}).when(threshold=2500)` |
-| `conversation_manager=SlidingWindowConversationManager(window_size=30)` | `Offload.truncate("*").when(utilization=1.0, preserve_recent=30)` |
+| `conversation_manager=SlidingWindowConversationManager(window_size=30)` | `Offload.drop("*").when(preserve_recent=30)` |
 | `context_manager="auto"` | unchanged |

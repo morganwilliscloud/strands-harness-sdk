@@ -46,3 +46,34 @@ async function presets() {
   })
   // --8<-- [end:presets]
 }
+
+async function customSummarizationModel() {
+  // --8<-- [start:custom_summarization_model]
+  const { Agent, Offload } = await import('@strands-agents/sdk')
+  const { BedrockModel } = await import('@strands-agents/sdk')
+
+  const agent = new Agent({
+    contextManager: {
+      strategies: [
+        Offload.summarize('*', {
+          model: new BedrockModel({ modelId: 'us.amazon.nova-lite-v1:0' }),
+          systemPrompt: 'Summarize preserving tool outputs, errors, and IDs.',
+        }).when({ utilization: 0.85, preserveRecent: 2 }),
+      ],
+      stash: false,
+    },
+  })
+  // --8<-- [end:custom_summarization_model]
+}
+
+async function storageBackends() {
+  // --8<-- [start:storage_backends]
+  const { LocalFileStorage, S3Storage } = await import('@strands-agents/sdk/storage')
+
+  // Local filesystem
+  const stashLocal = { storage: new LocalFileStorage('./artifacts/') }
+
+  // S3, uses ambient AWS credentials
+  const stashS3 = { storage: new S3Storage('my-bucket', { prefix: 'agent-stash/' }) }
+  // --8<-- [end:storage_backends]
+}
