@@ -160,9 +160,9 @@ The first argument to `Offload.*` controls what content the strategy considers:
 
 | Condition | Meaning |
 |---|---|
-| `threshold=N` | Fire when an individual block exceeds N tokens |
-| `utilization=0.85` | Fire when the context window is at least 85% full |
-| `preserve_recent=N` | Leave the N most recent matching messages untouched |
+| <Syntax py="threshold=N" ts="threshold: N" /> | Fire when an individual block exceeds N tokens |
+| <Syntax py="utilization=0.85" ts="utilization: 0.85" /> | Fire when the context window is at least 85% full |
+| <Syntax py="preserve_recent=N" ts="preserveRecent: N" /> | Leave the N most recent matching messages untouched |
 
 ### Named presets (TypeScript)
 
