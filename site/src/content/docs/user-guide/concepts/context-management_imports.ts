@@ -17,10 +17,10 @@ import { LocalFileStorage } from '@strands-agents/sdk/storage'
 import { Agent } from '@strands-agents/sdk'
 // --8<-- [end:presets_imports]
 
-// --8<-- [start:custom_summarization_model_imports]
+// --8<-- [start:custom_summary_model_imports]
 import { Agent, Offload } from '@strands-agents/sdk'
 import { BedrockModel } from '@strands-agents/sdk'
-// --8<-- [end:custom_summarization_model_imports]
+// --8<-- [end:custom_summary_model_imports]
 
 // --8<-- [start:storage_backends_imports]
 import { LocalFileStorage, S3Storage } from '@strands-agents/sdk/storage'
